@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <h2 class="text-center mb-4">Welcome Back</h2>
+            <form method="POST">
+                {% csrf_token %}
+                
+                <!-- Email Input -->
+                <div class="mb-3 form-group">
+                    {{ form.username.label_tag }}
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                        {{ form.username }}
+                    </div>
+                    {% if form.username.errors %}
+                        <div class="alert alert-danger mt-2">
+                            {{ form.username.errors|join:", " }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Password Input -->
+                <div class="mb-3 form-group">
+                    {{ form.password.label_tag }}
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                        {{ form.password }}
+                    </div>
+                    {% if form.password.errors %}
+                        <div class="alert alert-danger mt-2">
+                            {{ form.password.errors|join:", " }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-primary w-100">Login</button>
+            </form>
+
+            <!-- Non-field Errors -->
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger mt-3">
+                    {{ form.non_field_errors|join:", " }}
+                </div>
+            {% endif %}
+
+            <!-- Link to Registration -->
+            <div class="text-center mt-3">
+                <a href="{% url 'register' %}">Create an account</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include FontAwesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+{% endblock %}

@@ -1,0 +1,38 @@
+<!-- application_view.html -->
+{% extends 'base.html' %}
+
+{% block title %}View Applications{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Your Applications</h2>
+    {% if applications %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Roll Number</th>
+                    <th>Location</th>
+                    <th>CET Marks</th>
+                    <th>Caste</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for application in applications %}
+                    <tr>
+                        <td>{{ application.name }}</td>
+                        <td>{{ application.roll_number }}</td>
+                        <td>{{ application.location }}</td>
+                        <td>{{ application.cet_marks }}</td>
+                        <td>{{ application.caste }}</td>
+                        <td>{{ application.status }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No applications found.</p>
+    {% endif %}
+</div>
+{% endblock %}

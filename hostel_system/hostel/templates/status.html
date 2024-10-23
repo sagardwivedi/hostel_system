@@ -1,0 +1,38 @@
+{% extends 'hostel/templates/base.html' %}
+
+{% block title %}Application Status{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Your Application Status</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Roll Number</th>
+                <th>CET Marks</th>
+                <th>Location</th>
+                <th>Caste</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for application in applications %}
+            <tr>
+                <td>{{ application.name }}</td>
+                <td>{{ application.roll_number }}</td>
+                <td>{{ application.cet_marks }}</td>
+                <td>{{ application.location }}</td>
+                <td>{{ application.caste }}</td>
+                <td>{{ application.status }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No applications found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{% url 'student_dashboard' %}" class="btn btn-link mt-3">Back to Dashboard</a>
+</div>
+{% endblock %}

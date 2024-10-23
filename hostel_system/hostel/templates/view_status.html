@@ -1,0 +1,13 @@
+{% extends 'hostel/templates/base.html' %}
+{% block content %}
+<h2>Application Status</h2>
+{% if application %}
+    <div class="alert alert-info">
+        Your application status is: <strong>{{ application.status }}</strong>
+    </div>
+{% else %}
+    <div class="alert alert-warning">
+        You have not applied yet.
+    </div>
+{% endif %}
+{% endblock %}

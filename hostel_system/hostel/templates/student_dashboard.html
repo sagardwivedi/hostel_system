@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Student Dashboard</h2>
+    <p>Welcome, {{ user.username }}! You can apply for hostel or view your applications.</p>
+    <a href="{% url 'apply' %}" class="btn btn-success">Apply for Hostel</a>
+    <a href="{% url 'view' %}" class="btn btn-info">View Applications</a>
+</div>
+{% endblock %}
