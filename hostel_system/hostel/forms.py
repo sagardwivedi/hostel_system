@@ -74,7 +74,6 @@ class ApplicationForm(forms.ModelForm):
             "cet_marks",
             "caste",
         ]
-
         labels = {
             "name": "Full Name",
             "roll_number": "Roll Number",
@@ -82,13 +81,11 @@ class ApplicationForm(forms.ModelForm):
             "cet_marks": "CET Score",
             "caste": "Category",
         }
-
         help_texts = {
             "roll_number": "Enter your college roll number",
             "cet_marks": "Enter your CET examination score",
             "location": "Enter your current residential address",
         }
-
         widgets = {
             "name": forms.TextInput(
                 attrs={
@@ -135,3 +132,25 @@ class ApplicationForm(forms.ModelForm):
         if not name.replace(" ", "").isalpha():
             raise forms.ValidationError("Name can only contain letters and spaces")
         return name.title()
+
+    def clean_roll_number(self):
+        roll_number = self.cleaned_data.get("roll_number", "").strip()
+        if not roll_number:
+            raise forms.ValidationError("Roll Number is required")
+        if not roll_number.isalnum():
+            raise forms.ValidationError(
+                "Roll Number can only contain letters and numbers"
+            )
+        return roll_number
+
+    def clean_location(self):
+        location = self.cleaned_data.get("location", "").strip()
+        if not location:
+            raise forms.ValidationError("Location is required")
+        return location
+
+    def clean_caste(self):
+        caste = self.cleaned_data.get("caste")
+        if caste is None:
+            raise forms.ValidationError("Category selection is required")
+        return caste

@@ -152,35 +152,67 @@ def categorize_applications(applications):
 def application_create(request):
     """Handle creating a new application."""
     student = get_object_or_404(Student, user=request.user)
-    previous_application = Application.objects.filter(student=student, status='rejected').first()
 
-    if previous_application:
-        form = ApplicationForm(request.POST or None, instance=previous_application)
-        if request.method == "POST" and form.is_valid():
-            return save_application(form, request)
+    # Check for an existing application (submitted or rejected)
+    existing_application = Application.objects.filter(student=student).first()
+
+    # If there is an existing application
+    if existing_application:
+        # If the previous application was rejected, allow editing
+        if existing_application.status == "rejected":
+            form = ApplicationForm(request.POST or None, instance=existing_application)
+        else:
+            messages.warning(
+                request, "You already have an application that has not been rejected."
+            )
+            return redirect(
+                "student_dashboard"
+            )  # Redirect to student dashboard if they can't reapply
     else:
         form = ApplicationForm(request.POST or None)
 
-    return render(request, "application_form.html", {"form": form, "previous_application": previous_application})
+    # Handle form submission
+    if request.method == "POST":
+        if form.is_valid():
+            return save_application(
+                form, request
+            )  # Save the application if form is valid
+
+    # Render the application form
+    return render(
+        request,
+        "application_form.html",
+        {
+            "form": form,
+            "previous_application": existing_application,
+        },
+    )
+
 
 def save_application(form, request):
     """Save the application form data."""
     try:
         with transaction.atomic():
-            application = form.save(commit=False)
+            application = form.save(
+                commit=False
+            )  # Save the form without committing to the database
             application.student = get_object_or_404(Student, user=request.user)
 
             # If reapplying, clear previous rejection reasons if necessary
-            application.rejection_reason = ''
+            application.rejection_reason = ""  # Clear any rejection reason
 
-            application.status = "submitted"
-            
-            application.save()
-            messages.success(request, "Application submitted successfully!")
-            return redirect("student_dashboard")
+            application.status = "submitted"  # Set the status to submitted
+            application.save()  # Commit the application to the database
+            messages.success(
+                request, "Application submitted successfully!"
+            )  # Success message
+            return redirect(
+                "student_dashboard"
+            )  # Redirect to student dashboard after successful submission
     except Exception as e:
-        messages.error(request, f"An error occurred: {str(e)}")
+        messages.error(request, f"An error occurred: {str(e)}")  # Log the error message
 
+    # If there's an error during saving, render the form again
     return render(request, "application_form.html", {"form": form})
 
 
