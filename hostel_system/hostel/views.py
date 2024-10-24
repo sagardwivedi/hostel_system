@@ -1,123 +1,191 @@
+# Django Imports
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.http import HttpRequest
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
+# Local Imports
 from .forms import ApplicationForm, LoginForm, UserRegistrationForm
 from .models import Application, Student
 
 
+# ----------------------------------------------
+# Authentication Views
+# ----------------------------------------------
 def register(request: HttpRequest):
-    if request.method == "POST":
-        form = UserRegistrationForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data["email"]
-            password = form.cleaned_data["password"]
-            username = form.cleaned_data["username"]
+    """Handle user registration."""
+    form = UserRegistrationForm(request.POST or None)
 
-            # Create a new user with the email as the username
-            user = User(username=username, email=email)
-            user.set_password(password)  # Hash the password
-            user.save()
+    if request.method == "POST" and form.is_valid():
+        try:
+            with transaction.atomic():
+                user = User(
+                    username=form.cleaned_data["username"],
+                    email=form.cleaned_data["email"],
+                )
+                user.set_password(form.cleaned_data["password"])  # Hash the password
+                user.save()
+                Student.objects.create(user=user)  # Create a Student profile
 
-            # Create a Student profile for the new user
-            Student.objects.create(user=user)
-            messages.success(request, "Registration successful! You can now log in.")
-            return redirect("login")
-    else:
-        form = UserRegistrationForm()
+                messages.success(
+                    request, "Registration successful! You can now log in."
+                )
+                return redirect("login")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+
     return render(request, "register.html", {"form": form})
 
 
 def login_view(request: HttpRequest):
-    if request.method == "POST":
-        form = LoginForm(request.POST)
-        print(request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get("username")
-            password = form.cleaned_data.get("password")
-            print(username)
-            print(password)
-            user = authenticate(request, username=username, password=password)
-            print(user)
-            if user is not None:
-                login(request, user)
-                messages.success(
-                    request, "Login successful!"
-                )  # Optional success message
-                if user.is_staff:
-                    return redirect("rector_dashboard")
-                else:
-                    return redirect("student_dashboard")
-            else:
-                form.add_error(None, "Invalid credentials")  # Add non-field error
-    else:
-        form = LoginForm()
+    """Handle user login."""
+    form = LoginForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        username = form.cleaned_data["username"]
+        password = form.cleaned_data["password"]
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            messages.success(request, "Login successful!")
+            return redirect(
+                "rector_dashboard" if user.is_staff else "student_dashboard"
+            )
+        else:
+            messages.error(request, "Invalid credentials")
 
     return render(request, "login.html", {"form": form})
 
 
 def logout_view(request: HttpRequest):
+    """Handle user logout."""
     logout(request)
+    messages.info(request, "You have been logged out.")
     return redirect("login")
 
 
+# ----------------------------------------------
+# Dashboard Views
+# ----------------------------------------------
 @login_required
 def student_dashboard(request: HttpRequest):
+    """Render the student dashboard."""
     return render(request, "student_dashboard.html")
 
 
 @login_required
-def rector_dashboard(request: HttpRequest):
-    if request.method == "POST":
-        action = request.POST.get("action")
-
-        if action == "save":
-            for application in Application.objects.all():
-                print(request.POST)
-                accept_checkbox = request.POST.get(f"accept_{application.roll_number}")
-                reject_checkbox = request.POST.get(f"reject_{application.roll_number}")
-                print("Accept", accept_checkbox)
-                print("Reject", reject_checkbox)
-                if accept_checkbox and not reject_checkbox:
-                    application.status = "Accepted"
-                    application.save()
-                elif reject_checkbox and not accept_checkbox:
-                    application.status = "Rejected"
-                    application.save()
-
-            messages.success(request, "Applications have been updated.")
-        elif action == "cancel":
-            messages.info(request, "No changes were made.")
-
-        return redirect("rector_dashboard")
-
-    else:
-        applications = Application.objects.all()  # Fetch all applications
-        return render(request, "rector_dashboard.html", {"applications": applications})
+def reset_password(request: HttpRequest):
+    """Render the password reset page."""
+    return render(request, "password_reset.html")
 
 
 @login_required
-def application_create(request: HttpRequest):
+def rector_dashboard(request: HttpRequest):
+    """Render the rector's dashboard with application management."""
     if request.method == "POST":
-        form = ApplicationForm(request.POST)
-        if form.is_valid():
+        return handle_post_request(request)
+
+    applications = Application.objects.all()  # Fetch all applications
+    context = categorize_applications(applications)
+    return render(request, "rector_dashboard.html", context)
+
+
+def handle_post_request(request: HttpRequest):
+    """Handle POST requests for the rector dashboard."""
+    action = request.POST.get("action")
+    if action == "save":
+        return save_applications(request)
+    elif action == "cancel":
+        messages.info(request, "No changes were made.")
+        return redirect("rector_dashboard")
+
+    # Handle unknown actions
+    messages.warning(request, "Unknown action.")
+    return redirect("rector_dashboard")
+
+
+def save_applications(request: HttpRequest):
+    """Save accepted or rejected applications."""
+    try:
+        with transaction.atomic():
+            for roll_number in request.POST.keys():
+                if roll_number.startswith("action_"):
+                    action_value = request.POST[roll_number]
+                    roll_number = roll_number.split("_")[1]
+                    try:
+                        application = Application.objects.get(roll_number=roll_number)
+                        application.status = (
+                            "accepted" if action_value == "accept" else "rejected"
+                        )
+                        application.save()
+                    except Application.DoesNotExist:
+                        messages.warning(
+                            request,
+                            f"Application with roll number {roll_number} does not exist.",
+                        )
+                        continue
+
+            messages.success(request, "Applications have been updated.")
+    except Exception as e:
+        messages.error(request, f"An error occurred while updating: {str(e)}")
+
+    return redirect("rector_dashboard")
+
+
+def categorize_applications(applications):
+    """Categorize applications based on their status."""
+    return {
+        "pending_applications": applications.filter(status="submitted"),
+        "accepted_applications": applications.filter(status="accepted"),
+        "rejected_applications": applications.filter(status="rejected"),
+    }
+
+
+# ----------------------------------------------
+# Application Views
+# ----------------------------------------------
+@login_required
+def application_create(request):
+    """Handle creating a new application."""
+    student = get_object_or_404(Student, user=request.user)
+    previous_application = Application.objects.filter(student=student, status='rejected').first()
+
+    if previous_application:
+        form = ApplicationForm(request.POST or None, instance=previous_application)
+        if request.method == "POST" and form.is_valid():
+            return save_application(form, request)
+    else:
+        form = ApplicationForm(request.POST or None)
+
+    return render(request, "application_form.html", {"form": form, "previous_application": previous_application})
+
+def save_application(form, request):
+    """Save the application form data."""
+    try:
+        with transaction.atomic():
             application = form.save(commit=False)
-            application.student = Student.objects.get(
-                user=request.user
-            )  # Link to the logged-in student
-            application.save()  # Save the application data to the database
+            application.student = get_object_or_404(Student, user=request.user)
+
+            # If reapplying, clear previous rejection reasons if necessary
+            application.rejection_reason = ''
+
+            application.status = "submitted"
+            
+            application.save()
             messages.success(request, "Application submitted successfully!")
             return redirect("student_dashboard")
-    else:
-        form = ApplicationForm()
+    except Exception as e:
+        messages.error(request, f"An error occurred: {str(e)}")
+
     return render(request, "application_form.html", {"form": form})
 
 
 @login_required
-def application_view(request):
-    # Assuming you want to display the applications for the logged-in student
+def application_view(request: HttpRequest):
+    """Display applications submitted by the logged-in student."""
     applications = Application.objects.filter(student__user=request.user)
     return render(request, "application_view.html", {"applications": applications})

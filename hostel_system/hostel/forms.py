@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+
 from .models import Application
 
 
@@ -72,14 +73,65 @@ class ApplicationForm(forms.ModelForm):
             "location",
             "cet_marks",
             "caste",
-            "status",
         ]
 
-        widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control"}),
-            "roll_number": forms.TextInput(attrs={"class": "form-control"}),
-            "location": forms.TextInput(attrs={"class": "form-control"}),
-            "cet_marks": forms.NumberInput(attrs={"class": "form-control"}),
-            "caste": forms.Select(attrs={"class": "form-control"}),
-            "status": forms.Select(attrs={"class": "form-control"}),
+        labels = {
+            "name": "Full Name",
+            "roll_number": "Roll Number",
+            "location": "Current Location",
+            "cet_marks": "CET Score",
+            "caste": "Category",
         }
+
+        help_texts = {
+            "roll_number": "Enter your college roll number",
+            "cet_marks": "Enter your CET examination score",
+            "location": "Enter your current residential address",
+        }
+
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Enter your full name",
+                    "pattern": "[A-Za-z ]+",
+                    "title": "Only letters and spaces allowed",
+                }
+            ),
+            "roll_number": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Enter your roll number",
+                    "pattern": "[A-Za-z0-9]+",
+                }
+            ),
+            "location": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Enter your current location",
+                }
+            ),
+            "cet_marks": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Enter your CET marks",
+                    "min": "0",
+                    "max": "100",
+                }
+            ),
+            "caste": forms.Select(attrs={"class": "form-control form-select"}),
+        }
+
+    def clean_cet_marks(self):
+        marks = self.cleaned_data.get("cet_marks")
+        if marks is not None and (marks < 0 or marks > 100):
+            raise forms.ValidationError("CET marks must be between 0 and 100")
+        return marks
+
+    def clean_name(self):
+        name = self.cleaned_data.get("name", "").strip()
+        if not name:
+            raise forms.ValidationError("Name is required")
+        if not name.replace(" ", "").isalpha():
+            raise forms.ValidationError("Name can only contain letters and spaces")
+        return name.title()
