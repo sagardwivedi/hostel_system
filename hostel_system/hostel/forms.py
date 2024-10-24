@@ -78,20 +78,20 @@ class ApplicationForm(forms.ModelForm):
             "name": "Full Name",
             "roll_number": "Roll Number",
             "location": "Current Location",
-            "cet_marks": "CET Score",
+            "cet_marks": "CET Percentile",
             "caste": "Category",
         }
         help_texts = {
             "roll_number": "Enter your college roll number",
-            "cet_marks": "Enter your CET examination score",
-            "location": "Enter your current residential address",
+            "cet_marks": "Enter your CET examination percentile",
+            "location": "Enter your current city",
         }
         widgets = {
             "name": forms.TextInput(
                 attrs={
                     "class": "form-control",
                     "placeholder": "Enter your full name",
-                    "pattern": "[A-Za-z ]+",
+                    "pattern": "[A-Za-z ]+",  # Still useful for frontend validation
                     "title": "Only letters and spaces allowed",
                 }
             ),
@@ -99,19 +99,19 @@ class ApplicationForm(forms.ModelForm):
                 attrs={
                     "class": "form-control",
                     "placeholder": "Enter your roll number",
-                    "pattern": "[A-Za-z0-9]+",
+                    "pattern": "[A-Za-z0-9]+",  # For frontend validation
                 }
             ),
             "location": forms.TextInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "Enter your current location",
+                    "placeholder": "Enter your current city e.g. Mumbai, Jalgaon, etc",
                 }
             ),
             "cet_marks": forms.NumberInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "Enter your CET marks",
+                    "placeholder": "Enter your CET percentile",
                     "min": "0",
                     "max": "100",
                 }
@@ -121,8 +121,21 @@ class ApplicationForm(forms.ModelForm):
 
     def clean_cet_marks(self):
         marks = self.cleaned_data.get("cet_marks")
-        if marks is not None and (marks < 0 or marks > 100):
+        
+        # Check if the field is None
+        if marks is None:
+            raise forms.ValidationError("CET marks are required")
+
+        # Ensure marks is converted to an integer for comparison
+        try:
+            marks = int(marks)  # Convert to integer, if necessary
+        except (ValueError, TypeError):
+            raise forms.ValidationError("CET marks must be a valid number")
+
+        # Perform the comparison only after ensuring it's an integer
+        if marks < 0 or marks > 100:
             raise forms.ValidationError("CET marks must be between 0 and 100")
+
         return marks
 
     def clean_name(self):
@@ -131,13 +144,13 @@ class ApplicationForm(forms.ModelForm):
             raise forms.ValidationError("Name is required")
         if not name.replace(" ", "").isalpha():
             raise forms.ValidationError("Name can only contain letters and spaces")
-        return name.title()
+        return name.title()  # Capitalize each word in the name
 
     def clean_roll_number(self):
         roll_number = self.cleaned_data.get("roll_number", "").strip()
         if not roll_number:
             raise forms.ValidationError("Roll Number is required")
-        if not roll_number.isalnum():
+        if not roll_number.isalnum():  # Ensuring alphanumeric validation
             raise forms.ValidationError(
                 "Roll Number can only contain letters and numbers"
             )
@@ -151,6 +164,7 @@ class ApplicationForm(forms.ModelForm):
 
     def clean_caste(self):
         caste = self.cleaned_data.get("caste")
-        if caste is None:
+        if not caste:
             raise forms.ValidationError("Category selection is required")
         return caste
+

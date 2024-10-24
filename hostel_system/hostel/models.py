@@ -1,5 +1,4 @@
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -28,7 +27,6 @@ class Application(models.Model):
 
     STATUS_CHOICES = [
         ("submitted", "Submitted"),
-        ("under_review", "Under Review"),
         ("accepted", "Accepted"),
         ("rejected", "Rejected"),
     ]
@@ -42,12 +40,6 @@ class Application(models.Model):
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default="submitted"
     )
-    rejection_reason = models.TextField(blank=True, null=True)
-    last_application_date = models.DateTimeField(auto_now=True)
-
-    def clean(self):
-        if self.cet_marks < 0 or self.cet_marks > 100:
-            raise ValidationError("CET marks must be between 0 and 100.")
 
     def __str__(self):
         return f"Application by {self.name} (Roll No: {self.roll_number}), Status: {self.status}"

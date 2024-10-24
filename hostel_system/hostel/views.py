@@ -1,4 +1,3 @@
-# Django Imports
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -7,14 +6,11 @@ from django.db import transaction
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404, redirect, render
 
-# Local Imports
 from .forms import ApplicationForm, LoginForm, UserRegistrationForm
 from .models import Application, Student
 
 
-# ----------------------------------------------
 # Authentication Views
-# ----------------------------------------------
 def register(request: HttpRequest):
     """Handle user registration."""
     form = UserRegistrationForm(request.POST or None)
@@ -68,19 +64,11 @@ def logout_view(request: HttpRequest):
     return redirect("login")
 
 
-# ----------------------------------------------
 # Dashboard Views
-# ----------------------------------------------
 @login_required
 def student_dashboard(request: HttpRequest):
     """Render the student dashboard."""
     return render(request, "student_dashboard.html")
-
-
-@login_required
-def reset_password(request: HttpRequest):
-    """Render the password reset page."""
-    return render(request, "password_reset.html")
 
 
 @login_required
@@ -145,11 +133,9 @@ def categorize_applications(applications):
     }
 
 
-# ----------------------------------------------
 # Application Views
-# ----------------------------------------------
 @login_required
-def application_create(request):
+def application_create(request: HttpRequest):
     """Handle creating a new application."""
     student = get_object_or_404(Student, user=request.user)
 
@@ -165,18 +151,14 @@ def application_create(request):
             messages.warning(
                 request, "You already have an application that has not been rejected."
             )
-            return redirect(
-                "student_dashboard"
-            )  # Redirect to student dashboard if they can't reapply
+            return redirect("student_dashboard")
     else:
         form = ApplicationForm(request.POST or None)
 
     # Handle form submission
     if request.method == "POST":
         if form.is_valid():
-            return save_application(
-                form, request
-            )  # Save the application if form is valid
+            return save_application(form, request)
 
     # Render the application form
     return render(
@@ -189,7 +171,7 @@ def application_create(request):
     )
 
 
-def save_application(form, request):
+def save_application(form: ApplicationForm, request: HttpRequest):
     """Save the application form data."""
     try:
         with transaction.atomic():
@@ -213,7 +195,7 @@ def save_application(form, request):
         messages.error(request, f"An error occurred: {str(e)}")  # Log the error message
 
     # If there's an error during saving, render the form again
-    return render(request, "application_form.html", {"form": form}) 
+    return render(request, "application_form.html", {"form": form})
 
 
 @login_required
