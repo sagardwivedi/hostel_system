@@ -213,7 +213,7 @@ def save_application(form, request):
         messages.error(request, f"An error occurred: {str(e)}")  # Log the error message
 
     # If there's an error during saving, render the form again
-    return render(request, "application_form.html", {"form": form})
+    return render(request, "application_form.html", {"form": form}) 
 
 
 @login_required
