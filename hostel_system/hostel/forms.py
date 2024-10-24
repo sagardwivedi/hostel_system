@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-
+from django.contrib.auth import authenticate
 from .models import Application
 
 
@@ -18,6 +18,18 @@ class LoginForm(forms.Form):
             attrs={"class": "form-control", "placeholder": "Enter your password"}
         ),
     )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        username = cleaned_data.get("username")
+        password = cleaned_data.get("password")
+
+        if username and password:
+            # Try to authenticate the user
+            user = authenticate(username=username, password=password)
+            if user is None:
+                raise forms.ValidationError("Invalid credentials. Please try again.")
+        return cleaned_data
 
 
 class UserRegistrationForm(forms.ModelForm):

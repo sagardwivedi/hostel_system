@@ -40,19 +40,27 @@ def login_view(request: HttpRequest):
     """Handle user login."""
     form = LoginForm(request.POST or None)
 
-    if request.method == "POST" and form.is_valid():
-        username = form.cleaned_data["username"]
-        password = form.cleaned_data["password"]
-        user = authenticate(request, username=username, password=password)
+    if request.method == "POST":
+        if form.is_valid():
+            username = form.cleaned_data["username"]
+            password = form.cleaned_data["password"]
 
-        if user is not None:
-            login(request, user)
-            messages.success(request, "Login successful!")
-            return redirect(
-                "rector_dashboard" if user.is_staff else "student_dashboard"
-            )
+            # Authenticate the user
+            user = authenticate(request, username=username, password=password)
+
+            if user is not None:
+                # Log the user in
+                login(request, user)
+                messages.success(request, "Login successful!")
+                # Redirect based on user type
+                return redirect(
+                    "rector_dashboard" if user.is_staff else "student_dashboard"
+                )
+            else:
+                form.add_error(None, "Invalid credentials. Please try again.")
         else:
-            messages.error(request, "Invalid credentials")
+            # Handle form validation errors (these are automatically added to the form object)
+            messages.error(request, "Please correct the errors below.")
 
     return render(request, "login.html", {"form": form})
 

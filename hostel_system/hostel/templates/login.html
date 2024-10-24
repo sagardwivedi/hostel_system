@@ -20,28 +20,26 @@
                     <!-- Login Form -->
                     <form method="POST" novalidate class="needs-validation">
                         {% csrf_token %}
-
-                        <!-- Email/Username Input -->
+                        
+                        <!-- Username Input -->
                         <div class="mb-4">
                             {{ form.username.label_tag }}
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0">
                                     <i class="fas fa-envelope text-muted"></i>
                                 </span>
-                                {% with form.username.auto_id as id %}
-                                <input type="text" name="{{ form.username.name }}" 
+                                <input type="text" 
+                                       name="{{ form.username.name }}" 
                                        class="form-control border-start-0 bg-light ps-0{% if form.username.errors %} is-invalid{% endif %}"
-                                       id="{{ id }}"
-                                       placeholder="Enter your email"
-                                       {% if form.username.value %}value="{{ form.username.value }}"{% endif %}
-                                       required>
-                                {% endwith %}
-                                {% if form.username.errors %}
-                                <div class="invalid-feedback">
-                                    {{ form.username.errors|join:", " }}
-                                </div>
-                                {% endif %}
+                                       placeholder="Enter your email" 
+                                       id="{{ form.username.id_for_label }}"
+                                       value="{{ form.username.value|default:'' }}" required>
                             </div>
+                            {% if form.username.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.username.errors|join:", " }}
+                            </div>
+                            {% endif %}
                         </div>
 
                         <!-- Password Input -->
@@ -51,19 +49,17 @@
                                 <span class="input-group-text bg-light border-end-0">
                                     <i class="fas fa-lock text-muted"></i>
                                 </span>
-                                {% with form.password.auto_id as id %}
-                                <input type="password" name="{{ form.password.name }}" 
+                                <input type="password" 
+                                       name="{{ form.password.name }}" 
                                        class="form-control border-start-0 bg-light ps-0{% if form.password.errors %} is-invalid{% endif %}"
-                                       id="{{ id }}"
-                                       placeholder="Enter your password"
-                                       required>
-                                {% endwith %}
-                                {% if form.password.errors %}
-                                <div class="invalid-feedback">
-                                    {{ form.password.errors|join:", " }}
-                                </div>
-                                {% endif %}
+                                       placeholder="Enter your password" 
+                                       id="{{ form.password.id_for_label }}" required>
                             </div>
+                            {% if form.password.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.password.errors|join:", " }}
+                            </div>
+                            {% endif %}
                         </div>
 
                         <!-- Non-field Errors -->
